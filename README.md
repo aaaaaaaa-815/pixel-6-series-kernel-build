@@ -26,7 +26,7 @@ An automated CI/CD workflow leveraging GitHub Actions and Google's Kleaf (Bazel)
    - Retrieves the 8-character commit hash from `common`.
    - Clears `.repo` to free ~39GB disk space.
 4. **Kernel Compilation**: Executes `tools/bazel run` with target `//private/google-modules/soc/gs:slider_dist`.
-5. **Artifact Packaging**: Stores distribution output cleanly without nested directory wrapper.
+5. **Artifact Packaging**: Stores distribution output cleanly.
 6. **Release**: Publishes tag and attaches `raviole-kernel-slider.zip` to GitHub Release.
 
 ## Prerequisites
@@ -46,4 +46,5 @@ You can manually trigger a build from the GitHub Actions UI with custom paramete
 
 ## License
 
-This project is licensed under the [Apache License 2.0](LICENSE). Kernel sources compiled by this workflow are governed by their respective upstream licenses.
+This project is licensed under the [Apache License 2.0](LICENSE). 
+Kernel sources compiled by this workflow are governed by their respective upstream licenses.
