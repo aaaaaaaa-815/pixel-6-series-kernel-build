@@ -2,7 +2,6 @@ name: Pixel 6 Kernel Build (Kleaf)
 
 on:
   schedule:
-    # 北京时间每周日晚上 22:23 自动触发（UTC 14:23），避开整点与算力高峰
     - cron: '23 14 * * 0'
   workflow_dispatch:
     inputs:
@@ -15,12 +14,14 @@ on:
         required: true
         default: 'gs-android17-6.18-gs101'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. 优先清理 Runner 磁盘空间，腾出约 40GB+ 空间
     - name: Maximize Build Space
       uses: easimon/maximize-build-space@v10
       with:
@@ -32,11 +33,9 @@ jobs:
         remove-codeql: 'true'
         remove-docker-images: 'true'
 
-    # 2. 拉取工作流代码
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # 3. 安装依赖与 Repo 工具（使用 libbz2-dev）
     - name: Install Dependencies & Setup Repo
       run: |
         sudo apt-get update
@@ -48,8 +47,8 @@ jobs:
         chmod a+rx ~/.bin/repo
         echo "$HOME/.bin" >> $GITHUB_PATH
 
-    # 4. 同步内核源码，并在成功后直接自动删除 .repo (释放 39G 空间)
-    - name: Sync Source Code & Auto Clear .repo
+    - name: Sync Source Code & Get Commit SHA
+      id: sync
       run: |
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
@@ -57,13 +56,17 @@ jobs:
         mkdir workspace
         cd workspace
         
-        repo init -u ${{ github.event.inputs.MANIFEST_URL }} \
-                  -b ${{ github.event.inputs.MANIFEST_BRANCH }} \
+        repo init -u ${{ github.event.inputs.MANIFEST_URL || 'https://android.googlesource.com/kernel/manifest' }} \
+                  -b ${{ github.event.inputs.MANIFEST_BRANCH || 'gs-android17-6.18-gs101' }} \
                   --depth=1
         
-        repo sync -c --no-tags --no-clone-bundle -j$(nproc) && rm -rf .repo
+        repo sync -c --no-tags --no-clone-bundle -j$(nproc)
+        
+        COMMIT_SHA=$(git -C common rev-parse --short=8 HEAD)
+        echo "COMMIT_SHA=${COMMIT_SHA}" >> $GITHUB_OUTPUT
+        
+        rm -rf .repo
 
-    # 5. 执行 Bazel/Kleaf 编译
     - name: Build Kernel with Kleaf
       run: |
         cd workspace
@@ -78,10 +81,28 @@ jobs:
           --discard_analysis_cache \
           //private/google-modules/soc/gs:slider_dist
 
-    # 6. 直接上传 dist 目录，由 Artifact 自动打包为 raviole-kernel-slider.zip
-    - name: Upload Kernel Zip Artifact
-      uses: actions/upload-artifact@v4
+    - name: Package Dist Artifacts
+      run: |
+        cd workspace/out/slider/dist
+        zip -0 -r ../../../../raviole-kernel-slider.zip *
+
+    - name: Generate Release Tag
+      id: tag
+      run: |
+        DATE_STR=$(date +'%Y.%m.%d')
+        SHA="${{ steps.sync.outputs.COMMIT_SHA }}"
+        echo "RELEASE_TAG=${DATE_STR}-${SHA}" >> $GITHUB_OUTPUT
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
       with:
-        name: raviole-kernel-slider
-        path: workspace/out/slider/dist/
-        if-no-files-found: error
+        tag_name: ${{ steps.tag.outputs.RELEASE_TAG }}
+        name: "Pixel 6 Kernel Build ${{ steps.tag.outputs.RELEASE_TAG }}"
+        body: |
+          ### Pixel 6 (raviole/gs101) Kernel Build
+          
+          - **Manifest Branch**: `${{ github.event.inputs.MANIFEST_BRANCH || 'gs-android17-6.18-gs101' }}`
+          - **Kernel Commit (common)**: `${{ steps.sync.outputs.COMMIT_SHA }}`
+          - **Trigger**: `${{ github.event_name }}`
+        files: |
+          raviole-kernel-slider.zip
