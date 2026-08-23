@@ -75,7 +75,6 @@ jobs:
           --config=raviole \
           --config=release \
           --config=fast \
-          --local_ram_resources=HOST_RAM*0.8 \
           --jobs=$(nproc) \
           --nosandbox_debug \
           --discard_analysis_cache \
