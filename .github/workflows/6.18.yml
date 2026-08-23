@@ -1,0 +1,91 @@
+name: Pixel 6 Kernel Build (Kleaf)
+
+on:
+  workflow_dispatch:
+    inputs:
+      MANIFEST_URL:
+        description: 'Manifest Repository URL'
+        required: true
+        default: 'https://android.googlesource.com/kernel/manifest'
+      MANIFEST_BRANCH:
+        description: 'Manifest Branch'
+        required: true
+        default: 'gs-android17-6.18-gs101'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # 1. 释放 GitHub Runner 磁盘空间
+    - name: Maximize Build Space
+      uses: easimon/maximize-build-space@v10
+      with:
+        root-reserve-mb: 8192
+        swap-size-mb: 4096
+        remove-dotnet: 'true'
+        remove-android: 'true'
+        remove-haskell: 'true'
+        remove-codeql: 'true'
+        remove-docker-images: 'true'
+
+    # 2. 安装必要的基础依赖与 Repo 工具
+    - name: Install Dependencies & Setup Repo
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y flex bison build-essential libssl-dev libelf-dev \
+          git-core gnupg ccache zip curl zlib1g-dev python3 python3-pip python3-bz2
+        
+        mkdir -p ~/.bin
+        curl https://storage.googleapis.com/git-repo-downloads/repo > ~/.bin/repo
+        chmod a+rx ~/.bin/repo
+        echo "$HOME/.bin" >> $GITHUB_PATH
+
+    # 3. 同步源码
+    - name: Sync Source Code
+      run: |
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        
+        mkdir workspace
+        cd workspace
+        
+        # 初始化 gs101 manifest
+        repo init -u ${{ github.event.inputs.MANIFEST_URL }} \
+                  -b ${{ github.event.inputs.MANIFEST_BRANCH }} \
+                  --depth=1
+        
+        # 并行同步源码
+        repo sync -c --no-tags --no-clone-bundle -j$(nproc)
+
+    # 4. 执行 Bazel/Kleaf 编译
+    - name: Build Kernel with Kleaf
+      run: |
+        cd workspace
+        
+        # 执行完整的 slider_dist 构建，产物默认输出到 out/slider/dist
+        tools/bazel run \
+          --config=raviole \
+          --config=release \
+          --config=fast \
+          --local_ram_resources=HOST_RAM*0.8 \
+          --jobs=$(nproc) \
+          //private/google-modules/soc/gs:slider_dist
+
+    # 5. 打包 out/slider/dist 目录下的所有文件 (仅存储格式 zip -0)
+    - name: Package Dist Artifacts (Store only)
+      run: |
+        cd workspace/out/slider/dist
+        # -0 表示 store-only（不进行 deflate 压缩，仅打包归档），速度极快
+        zip -0 -r ../../../raviole-kernel-slider.zip .
+
+    # 6. 上传 zip 打包产物
+    - name: Upload Kernel Zip Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: raviole-kernel-slider
+        path: workspace/raviole-kernel-slider.zip
+        if-no-files-found: error
