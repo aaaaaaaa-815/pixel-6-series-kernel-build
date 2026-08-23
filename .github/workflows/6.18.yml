@@ -1,6 +1,9 @@
 name: Pixel 6 Kernel Build (Kleaf)
 
 on:
+  schedule:
+    # 北京时间每周日晚上 22:23 自动触发（UTC 14:23）
+    - cron: '23 14 * * 0'
   workflow_dispatch:
     inputs:
       MANIFEST_URL:
@@ -17,10 +20,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
-
-    # 1. 释放 GitHub Runner 磁盘空间
+    # 1. 必须优先清理磁盘空间（防止 apt-get 或 checkout 报 No space left）
     - name: Maximize Build Space
       uses: easimon/maximize-build-space@v10
       with:
@@ -32,7 +32,11 @@ jobs:
         remove-codeql: 'true'
         remove-docker-images: 'true'
 
-    # 2. 安装必要的基础依赖与 Repo 工具
+    # 2. 拉取仓库代码
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # 3. 安装必要依赖与 Repo 工具
     - name: Install Dependencies & Setup Repo
       run: |
         sudo apt-get update
@@ -44,7 +48,7 @@ jobs:
         chmod a+rx ~/.bin/repo
         echo "$HOME/.bin" >> $GITHUB_PATH
 
-    # 3. 同步源码
+    # 4. 同步内核源码
     - name: Sync Source Code
       run: |
         git config --global user.name "GitHub Actions"
@@ -53,20 +57,17 @@ jobs:
         mkdir workspace
         cd workspace
         
-        # 初始化 gs101 manifest
         repo init -u ${{ github.event.inputs.MANIFEST_URL }} \
                   -b ${{ github.event.inputs.MANIFEST_BRANCH }} \
                   --depth=1
         
-        # 并行同步源码
         repo sync -c --no-tags --no-clone-bundle -j$(nproc)
 
-    # 4. 执行 Bazel/Kleaf 编译
+    # 5. 执行 Bazel/Kleaf 编译
     - name: Build Kernel with Kleaf
       run: |
         cd workspace
         
-        # 执行完整的 slider_dist 构建，产物默认输出到 out/slider/dist
         tools/bazel run \
           --config=raviole \
           --config=release \
@@ -75,14 +76,13 @@ jobs:
           --jobs=$(nproc) \
           //private/google-modules/soc/gs:slider_dist
 
-    # 5. 打包 out/slider/dist 目录下的所有文件 (仅存储格式 zip -0)
+    # 6. 打包 out/slider/dist 目录（仅存储格式 zip -0）
     - name: Package Dist Artifacts (Store only)
       run: |
         cd workspace/out/slider/dist
-        # -0 表示 store-only（不进行 deflate 压缩，仅打包归档），速度极快
         zip -0 -r ../../../raviole-kernel-slider.zip .
 
-    # 6. 上传 zip 打包产物
+    # 7. 上传 zip 产物
     - name: Upload Kernel Zip Artifact
       uses: actions/upload-artifact@v4
       with:
