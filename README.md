@@ -43,8 +43,8 @@ You can manually trigger a build from the GitHub Actions UI with custom paramete
 | :--- | :--- | :--- |
 | `MANIFEST_URL` | Android Kernel Manifest Repository URL | `https://android.googlesource.com/kernel/manifest` |
 | `MANIFEST_BRANCH` | Manifest Branch | `gs-android17-6.18-gs101` |
-
+| `PUBLISH_TYPE` | Github Publication Method  | `both` |
 ## License
 
-This project is licensed under the [Apache License 2.0](LICENSE). 
-Kernel sources compiled by this workflow are governed by their respective upstream licenses.
+- This project is licensed under the [Apache License 2.0](LICENSE). 
+- Kernel sources compiled by this workflow are governed by their respective upstream licenses.
