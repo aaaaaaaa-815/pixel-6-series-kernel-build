@@ -13,6 +13,15 @@ on:
         description: 'Manifest Branch'
         required: true
         default: 'gs-android17-6.18-gs101'
+      PUBLISH_TYPE:
+        description: 'Choose Artifact Publishing Type'
+        required: true
+        type: choice
+        default: 'both'
+        options:
+          - 'release'
+          - 'artifact'
+          - 'both'
 
 permissions:
   contents: write
@@ -98,7 +107,16 @@ jobs:
         echo "RELEASE_TAG=${TAG_NAME}" >> $GITHUB_OUTPUT
         echo "RELEASE_NAME=Pixel 6 Kernel Build ${TAG_NAME}" >> $GITHUB_OUTPUT
 
+    - name: Upload Actions Artifact (Store Mode)
+      if: ${{ github.event_name == 'schedule' || github.event.inputs.PUBLISH_TYPE == 'artifact' || github.event.inputs.PUBLISH_TYPE == 'both' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: raviole-kernel-slider-${{ steps.tag.outputs.RELEASE_TAG }}
+        path: raviole-kernel-slider.zip
+        compression-level: 0
+
     - name: Create GitHub Release
+      if: ${{ github.event_name == 'schedule' || github.event.inputs.PUBLISH_TYPE == 'release' || github.event.inputs.PUBLISH_TYPE == 'both' }}
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ steps.tag.outputs.RELEASE_TAG }}
