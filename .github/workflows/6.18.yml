@@ -56,14 +56,17 @@ jobs:
         mkdir workspace
         cd workspace
         
+        BRANCH="${{ github.event.inputs.MANIFEST_BRANCH || 'gs-android17-6.18-gs101' }}"
+        
         repo init -u ${{ github.event.inputs.MANIFEST_URL || 'https://android.googlesource.com/kernel/manifest' }} \
-                  -b ${{ github.event.inputs.MANIFEST_BRANCH || 'gs-android17-6.18-gs101' }} \
+                  -b "${BRANCH}" \
                   --depth=1
         
         repo sync -c --no-tags --no-clone-bundle -j$(nproc)
         
         COMMIT_SHA=$(git -C common rev-parse --short=8 HEAD)
         echo "COMMIT_SHA=${COMMIT_SHA}" >> $GITHUB_OUTPUT
+        echo "BRANCH=${BRANCH}" >> $GITHUB_OUTPUT
         
         rm -rf .repo
 
@@ -85,22 +88,25 @@ jobs:
         cd workspace/out/slider/dist
         zip -0 -r ../../../../raviole-kernel-slider.zip *
 
-    - name: Generate Release Tag
+    - name: Generate Release Tag & Title
       id: tag
       run: |
         DATE_STR=$(date +'%Y.%m.%d')
         SHA="${{ steps.sync.outputs.COMMIT_SHA }}"
-        echo "RELEASE_TAG=${DATE_STR}-${SHA}" >> $GITHUB_OUTPUT
+        BRANCH="${{ steps.sync.outputs.BRANCH }}"
+        TAG_NAME="${DATE_STR}-${BRANCH}-${SHA}"
+        echo "RELEASE_TAG=${TAG_NAME}" >> $GITHUB_OUTPUT
+        echo "RELEASE_NAME=Pixel 6 Kernel Build ${TAG_NAME}" >> $GITHUB_OUTPUT
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ steps.tag.outputs.RELEASE_TAG }}
-        name: "Pixel 6 Kernel Build ${{ steps.tag.outputs.RELEASE_TAG }}"
+        name: ${{ steps.tag.outputs.RELEASE_NAME }}
         body: |
           ### Pixel 6 (raviole/gs101) Kernel Build
           
-          - **Manifest Branch**: `${{ github.event.inputs.MANIFEST_BRANCH || 'gs-android17-6.18-gs101' }}`
+          - **Manifest Branch**: `${{ steps.sync.outputs.BRANCH }}`
           - **Kernel Commit (common)**: `${{ steps.sync.outputs.COMMIT_SHA }}`
           - **Trigger**: `${{ github.event_name }}`
         files: |
