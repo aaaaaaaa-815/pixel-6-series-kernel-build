@@ -80,9 +80,6 @@ jobs:
         cd ..
         echo "COMMIT_SHA=${COMMIT_SHA}" >> $GITHUB_OUTPUT
         echo "BRANCH=${BRANCH}" >> $GITHUB_OUTPUT
-        
-        rm -rf .repo
-
     - name: Build Kernel with Kleaf
       run: |
         cd workspace
