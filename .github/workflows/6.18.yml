@@ -74,9 +74,8 @@ jobs:
         repo sync -c --no-tags --no-clone-bundle -j$(nproc)
         COMMIT_SHA=$(git -C common rev-parse --short=8 HEAD)
         cd common
-        echo "CONFIG_TMPFS_POSIX_ACL=y" >> arch/arm64/configs/gki_defconfig
-        git add arch/arm64/configs/gki_defconfig
-        git commit -m "kconfig: enable CONFIG_TMPFS_POSIX_ACL"
+        sed -i '704a CONFIG_TMPFS_POSIX_ACL=y' arch/arm64/configs/gki_defconfig
+        git commit -am "kconfig: enable CONFIG_TMPFS_POSIX_ACL"
         cd ..
         echo "COMMIT_SHA=${COMMIT_SHA}" >> $GITHUB_OUTPUT
         echo "BRANCH=${BRANCH}" >> $GITHUB_OUTPUT
