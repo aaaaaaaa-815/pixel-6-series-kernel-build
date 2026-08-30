@@ -82,8 +82,10 @@ jobs:
     - name: Build Kernel with Kleaf
       run: |
         cd workspace
-        echo "CONFIG_TMPFS_POSIX_ACL=y" >> common/arch/arm64/configs/gki_defconfig
-        git -C common commit -a -m "kconfig: enable CONFIG_TMPFS_POSIX_ACL"
+        cd common
+        echo "CONFIG_TMPFS_POSIX_ACL=y" >> arch/arm64/configs/gki_defconfig
+        git commit -am "temp local commit to prevent dirty flag"
+        cd ..
         tools/bazel run \
           --config=raviole \
           --config=release \
