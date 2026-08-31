@@ -70,7 +70,7 @@ jobs:
         repo init -u ${{ github.event.inputs.MANIFEST_URL || 'https://android.googlesource.com/kernel/manifest' }} \
                   -b "${BRANCH}" \
                   --depth=1
-        
+        sed -i '/name="kernel\/common"/ { /revision="android-mainline"/! s/revision="android\([^"]*\)"/revision="android\1-lts"/ }' .repo/manifests/default.xml
         repo sync -c --no-tags --no-clone-bundle -j$(nproc)
         COMMIT_SHA=$(git -C common rev-parse --short=8 HEAD)
         cd common
