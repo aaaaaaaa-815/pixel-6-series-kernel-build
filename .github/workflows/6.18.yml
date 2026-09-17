@@ -43,7 +43,7 @@ jobs:
         remove-docker-images: 'true'
 
     - name: Checkout Code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Install Dependencies & Setup Repo
       run: |
@@ -70,7 +70,6 @@ jobs:
         repo init -u ${{ github.event.inputs.MANIFEST_URL || 'https://android.googlesource.com/kernel/manifest' }} \
                   -b "${BRANCH}" \
                   --depth=1
-        sed -i '/name="kernel\/common"/ { /revision="android-mainline"/! s/revision="android\([^"]*\)"/revision="android\1-lts"/ }' .repo/manifests/default.xml
         repo sync -c --no-tags --no-clone-bundle -j$(nproc)
         COMMIT_SHA=$(git -C common rev-parse --short=8 HEAD)
         cd common
@@ -108,7 +107,7 @@ jobs:
 
     - name: Upload Actions Artifact (Store Mode)
       if: ${{ github.event_name == 'schedule' || github.event.inputs.PUBLISH_TYPE == 'artifact' || github.event.inputs.PUBLISH_TYPE == 'both' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: raviole-kernel-slider-${{ steps.tag.outputs.RELEASE_TAG }}
         path: raviole-kernel-slider.zip
@@ -116,7 +115,7 @@ jobs:
 
     - name: Create GitHub Release
       if: ${{ github.event_name == 'schedule' || github.event.inputs.PUBLISH_TYPE == 'release' || github.event.inputs.PUBLISH_TYPE == 'both' }}
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       with:
         tag_name: ${{ steps.tag.outputs.RELEASE_TAG }}
         name: ${{ steps.tag.outputs.RELEASE_NAME }}
