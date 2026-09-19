@@ -33,7 +33,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: 	ubuntu-26.04-arm
+    runs-on: 	ubuntu-26.04
 
     steps:
     - name: Maximize Build Space
