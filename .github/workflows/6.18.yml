@@ -12,7 +12,12 @@ on:
       MANIFEST_BRANCH:
         description: 'Manifest Branch'
         required: true
+        type: choice
         default: 'gs-android17-6.18-gs101'
+        options:
+          - 'gs-android16-6.12-gs101'
+          - 'gs-android17-6.18-gs101'
+          - 'gs-android-gs-raviole-mainline'
       PUBLISH_TYPE:
         description: 'Choose Artifact Publishing Type'
         required: true
