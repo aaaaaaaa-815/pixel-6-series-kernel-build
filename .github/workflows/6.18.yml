@@ -44,8 +44,6 @@ jobs:
           haskell: true           # 删除 Haskell (在部分镜像上收益很小)
           large-packages: true    # 删除大型杂项包 (~5.3GB)
           docker-images: true     # 删除预装的 Docker 镜像
-          swap-storage: true      # 删除 swap 存储 (~4GB)
-          tool-cache: false       # 谨慎开启：会删除 Node/Go/Python 等工具缓存 (~6GB)，可能影响后续步骤
 
     - name: Checkout Code
       uses: actions/checkout@v7
