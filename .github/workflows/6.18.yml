@@ -36,9 +36,9 @@ jobs:
     runs-on: 	ubuntu-26.04
 
     steps:
-      - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@v1.3.1   # 建议固定到具体版本，而非 @main
-        with:
+    - name: Free Disk Space (Ubuntu)
+      uses: jlumbroso/free-disk-space@v2.0.0   # 建议固定到具体版本，而非 @main
+      with:
           android: true           # 删除 Android SDK (~14GB)
           dotnet: true            # 删除 .NET 运行时 (~2.7GB)
           haskell: true           # 删除 Haskell (在部分镜像上收益很小)
