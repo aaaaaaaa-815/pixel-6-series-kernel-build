@@ -94,7 +94,13 @@ jobs:
 
     - name: Package Dist Artifacts
       run: |
-        cd workspace/out/slider/dist
+        ROOT_DIR="workspace"
+        AVBTOOL="python3 ${ROOT_DIR}/external/avb/avbtool.py"
+        KEY="${ROOT_DIR}/tools/mkbootimg/gki/testdata/testkey_rsa4096.pem"
+        ALG="SHA256_RSA4096"
+        export PATH="${ROOT_DIR}/prebuilts/kernel-build-tools/linux_musl-x86/bin:${PATH}"
+        cd ${ROOT_DIR}/out/slider/dist
+        $AVBTOOL add_hash_footer --image boot.img --partition_name boot --partition_size 67108864 --key $KEY --algorithm $ALG
         zip -0 -r ../../../../raviole-kernel-slider.zip *
 
     - name: Generate Release Tag & Title
