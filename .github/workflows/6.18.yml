@@ -94,7 +94,7 @@ jobs:
 
     - name: Package Dist Artifacts
       run: |
-        ROOT_DIR="workspace"
+        ROOT_DIR="${{ github.workspace }}/workspace"
         AVBTOOL="python3 ${ROOT_DIR}/external/avb/avbtool.py"
         KEY="${ROOT_DIR}/tools/mkbootimg/gki/testdata/testkey_rsa4096.pem"
         ALG="SHA256_RSA4096"
